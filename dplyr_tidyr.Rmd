@@ -1,0 +1,107 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(dplyr)
+library(gapminder)
+data(gapminder)
+gap <- gapminder
+rm(gapminder)
+```
+
+```{r}
+head(gap)
+
+gdp_by_continent <-
+  gap %>%
+  group_by(continent)
+
+# Pipe is equivalent to:
+#  group_by(gap, continent)
+
+
+gdp_by_continent
+
+# group_by turns a single data frame into
+# a set of data frames based on some variable.
+
+gdp_by_continent <-
+  gdp_by_continent %>%
+  summarize(mean_gdpPercap = mean(gdpPercap))
+gdp_by_continent
+
+gdp <-
+  gap %>%
+  summarize(mean_gdpPercap = mean(gdpPercap))
+gdp
+```
+
+```{r}
+life <-
+  gap %>%
+  group_by(country) %>%
+  summarize(lifeExp = mean(lifeExp))
+life
+```
+
+```{r}
+bill_gdp <-
+  gap %>%
+  filter(year == 2007) %>%
+  mutate(billion_gdp = gdpPercap * pop / 1e9) %>%
+  select(continent, country, billion_gdp)
+bill_gdp
+colnames(bill_gdp)
+dim(bill_gdp)
+```
+
+```{r}
+gdp_by_cont <-
+  gap %>%
+  group_by(continent, year)
+head(gdp_by_cont)
+
+gdp_by_cont %>%
+  summarize(mean_gdp = mean(gdpPercap),
+            sd_gdp = sd(gdpPercap),
+            mean_pop = mean(pop),
+            # Function n() counts the sample size of the variable we group by.
+            sample_size = n(),
+            se_gdp = sd_gdp / sqrt(sample_size))
+
+# Data is still grouped!
+str(gdp_by_cont)
+```
+
+```{r}
+library(tidyr)
+gap_wide <- read.csv("data/gapminder_wide.csv",
+                     stringsAsFactors = FALSE)
+gap_long <-
+  gap_wide %>%
+  gather(obs_year, obs_values, -continent, -country) %>%
+  separate(obs_year, into = c("obs_type", "year"), by = "_", convert = TRUE)
+gap_long
+```
+
+```{r}
+gap_normal <-
+  gap_long %>%
+  spread(obs_type, obs_values)
+gap_normal
+
+colnames(gap_normal)
+colnames(gap)
+
+gap_normal <- gap_normal %>% select(colnames(gap))
+
+gap2 <-
+  gap %>%
+  mutate_if(is.factor, as.character)
+all.equal(gap2, gap_normal, convert = TRUE)
+```
+
